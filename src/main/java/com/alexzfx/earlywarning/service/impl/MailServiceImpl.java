@@ -7,7 +7,6 @@ import com.alexzfx.earlywarning.repository.UserRepository;
 import com.alexzfx.earlywarning.service.MailService;
 import com.alexzfx.earlywarning.util.VerCodeUtil;
 import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -84,6 +83,8 @@ public class MailServiceImpl implements MailService {
         } catch (Exception e) {
             throw MailSendError;
         }
+        user.setEmail(mail);
+        userRepository.save(user);
     }
 
     /**

@@ -15,7 +15,6 @@ import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.Resource;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -27,7 +26,7 @@ import java.util.Set;
 public class UserRealm extends AuthorizingRealm {
 
 
-    @Resource
+    @Autowired
     private BaseException UnknownAccountError;
 
     @Autowired

@@ -1,9 +1,9 @@
 package com.alexzfx.earlywarning.util;
 
 import com.alexzfx.earlywarning.exception.BaseException;
+import org.apache.shiro.session.Session;
 
 import javax.imageio.ImageIO;
-import javax.servlet.http.HttpSession;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -20,9 +20,9 @@ public class VerCodeUtil {
     private static final int CODE_LEN = 4;
 
     // 验证码中所使用到的字符
-    private final char[] codeChar = "ABCDEFGHJKMNOPQRSTUVWXYZabcdefghjkmnopqrstuvwxyz0123456".toCharArray();
+    private static final char[] codeChar = "ABCDEFGHJKMNOPQRSTUVWXYZabcdefghjkmnopqrstuvwxyz0123456".toCharArray();
 
-    public void getVetCode(HttpSession session, OutputStream os) throws IOException {
+    public static void getVetCode(Session session, OutputStream os) throws IOException {
         // 用于绘制图片，设置图片的长宽和图片类型（RGB)
         BufferedImage bi = new BufferedImage(IMG_HEIGHT, IMG_WIDTH, BufferedImage.TYPE_INT_RGB);
         // 获取绘图工具
@@ -40,14 +40,14 @@ public class VerCodeUtil {
             captcha.append(codeChar[index]);
         }
         // 将生成的验证码code放入sessoin中
-        session.setAttribute("code", captcha.toString());
+        session.setAttribute("verCode", captcha.toString());
         // 通过ImageIO将图片输出
         ImageIO.write(bi, "JPG", os);
     }
 
-    public Boolean checkVerCode(HttpSession session, String verCode) {
+    public static Boolean checkVerCode(Session session, String verCode) {
         // 获取存放在session中的验证码
-        String code = (String) session.getAttribute("code");
+        String code = (String) session.getAttribute("verCode");
         if (code == null) {
             throw new BaseException(1000, "请先获取验证码");
         }

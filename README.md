@@ -1,7 +1,7 @@
 # earlywarning
 ### 本学期的课程设计，目标是做一个工业预警系统，目前仍在开发过程中，不定时更新，回头会带上朋友写的前端页面。
-本课程设计用到的框架基本为  
-#### springboot+shiro+springdatajpa+redis+websocket。
+本课程设计用到的框架和工具基本为  
+#### springboot2.0+shiro+springdatajpa+redis+websocket。
 
 老师给的需求如下  
 

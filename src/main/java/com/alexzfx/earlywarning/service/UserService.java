@@ -1,6 +1,7 @@
 package com.alexzfx.earlywarning.service;
 
 import com.alexzfx.earlywarning.entity.User;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Author : Alex
@@ -17,4 +18,7 @@ public interface UserService {
 
     void register(User user);
 
+    String uploadAvatar(MultipartFile file);
+
+    void updatePassword(String password);
 }

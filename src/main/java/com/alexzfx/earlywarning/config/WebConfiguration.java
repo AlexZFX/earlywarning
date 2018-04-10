@@ -37,7 +37,7 @@ public class WebConfiguration implements WebMvcConfigurer {
     @Bean
     public String RootPath(){
         //TODO 路径
-        return "";
+        return "F:\\earlywarning";
     }
 
 

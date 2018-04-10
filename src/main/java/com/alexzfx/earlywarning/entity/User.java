@@ -15,6 +15,7 @@ import java.util.List;
  */
 @Entity
 @Data
+@Table()
 public class User implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,15 +23,19 @@ public class User implements Serializable {
     @Column(unique = true)
     private String username;
     private String name;
+    @Column(unique = true)
     private String email;//需要验证
     private String description;
     private LockStatus isEmailLocked = LockStatus.LOCKED;
     @GsonIgnore
     private String password;
-    private LockStatus isLocked = LockStatus.LOCKED;
+    private LockStatus isLocked = LockStatus.UNLOCKED;
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "UserRole", joinColumns = {@JoinColumn(name = "uid")}, inverseJoinColumns = {@JoinColumn(name = "roleId")})
     private List<Role> roles;
     private String avatar;//头像路径
+    @Transient
+    @GsonIgnore
+    private String verCode;
 }
 

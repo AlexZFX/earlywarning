@@ -28,6 +28,16 @@ public class ExceptionBean {
     }
 
     @Bean
+    public BaseException VerCodeError() {
+        return new BaseException(1003, "验证码错误");
+    }
+
+    @Bean
+    public BaseException PasswordValidError() {
+        return new BaseException(1004, "密码必须包含数字、字母、特殊字符三种,\n长度属于6-16位之间");
+    }
+
+    @Bean
     public BaseException MailSendError() {
         return new BaseException(2000, "邮件发送失败");
     }
@@ -35,5 +45,10 @@ public class ExceptionBean {
     @Bean
     public BaseException AuthFailError() {
         return new BaseException(2001, "验证失败");
+    }
+
+    @Bean
+    public BaseException FileTransError() {
+        return new BaseException(3000, "文件转存失败");
     }
 }
