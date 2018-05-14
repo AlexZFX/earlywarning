@@ -89,8 +89,10 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/static/**", "anon");
         filterChainDefinitionMap.put("/register", "anon");
         filterChainDefinitionMap.put("/login", "anon");
-        filterChainDefinitionMap.put("/get_ver_code", "anon");
+        filterChainDefinitionMap.put("/getVerCode", "anon");
+        filterChainDefinitionMap.put("/authEmail", "anon");
         filterChainDefinitionMap.put("/**", "authc");
+//        filterChainDefinitionMap.put("/**", "anon");
         shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);
         return shiroFilterFactoryBean;
     }

@@ -1,14 +1,11 @@
 package com.alexzfx.earlywarninguser.entity.e;
 
-import com.alexzfx.earlywarninguser.exception.BaseException;
-import com.alexzfx.earlywarninguser.util.GsonUtil.GsonEnum;
-
 /**
  * Author : Alex
  * Date : 2018/3/21 10:36
  * Description :
  */
-public enum LockStatus implements GsonEnum<LockStatus> {
+public enum LockStatus {
     LOCKED(0),
     UNLOCKED(1);
 
@@ -24,28 +21,6 @@ public enum LockStatus implements GsonEnum<LockStatus> {
 
     public void setId(int id) {
         this.id = id;
-    }
-
-    @Override
-    public String serialize() {
-        return String.valueOf(this.id);
-    }
-
-    @Override
-    public LockStatus deserialize(String s) {
-        return parse(s);
-    }
-
-    @Override
-    public LockStatus parse(String type) {
-        switch (Integer.valueOf(type)) {
-            case 0:
-                return LOCKED;
-            case 1:
-                return UNLOCKED;
-            default:
-                throw new BaseException();
-        }
     }
 
 

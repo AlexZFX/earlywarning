@@ -1,5 +1,6 @@
 package com.alexzfx.earlywarningmachine.rabbit;
 
+import com.alibaba.fastjson.JSON;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ public class MessageSender {
     }
 
     public void machineDataSender(MachineMessage message) {
-        rabbitTemplate.convertAndSend(MACHINE_DATA_QUEUE, message);
+        String msg = JSON.toJSONString(message);
+        rabbitTemplate.convertAndSend(MACHINE_DATA_QUEUE, msg);
     }
 }

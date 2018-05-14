@@ -4,6 +4,7 @@ import com.alexzfx.earlywarninguser.entity.InstCategory;
 import com.alexzfx.earlywarninguser.entity.Instrument;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -29,4 +30,16 @@ public interface InstrumentService {
     Instrument getInstrumentById(int id);
 
     void createModelInstrument(Instrument instrument);
+
+    Page<Instrument> getUserInstrument(Pageable pageable, String keyWord);
+
+    Integer createInstrument(Instrument instrument);
+
+    void modifyInstrument(Instrument instrument);
+
+    Page<Instrument> getInstruments(Integer uid, String keyWord, Pageable pageable);
+
+    String uploadInstPic(MultipartFile file);
+
+    void deleteInstrumentById(Integer id);
 }

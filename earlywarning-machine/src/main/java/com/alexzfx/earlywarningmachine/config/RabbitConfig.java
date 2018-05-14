@@ -33,4 +33,14 @@ public class RabbitConfig {
         configurer.configure(factory, connectionFactory);
         return factory;
     }
+
+//    @Bean
+//    public MessageSender messageSender(RabbitTemplate rabbitTemplate){
+//        return new MessageSender(rabbitTemplate);
+//    }
+
+//    @Bean
+//    public RabbitTemplate rabbitTemplate(){
+//        return new RabbitTemplate();
+//    }
 }

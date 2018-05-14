@@ -13,6 +13,11 @@ import org.springframework.context.annotation.Configuration;
 public class ExceptionBean {
 
     @Bean
+    public BaseException PermissionDenied() {
+        return new BaseException(403, "权限不足");
+    }
+
+    @Bean
     public BaseException UnknownAccountError() {
         return new BaseException(1000, "账户不存在");
     }
@@ -33,8 +38,13 @@ public class ExceptionBean {
     }
 
     @Bean
-    public BaseException PasswordValidError() {
+    public BaseException PwdValidError() {
         return new BaseException(1004, "密码必须包含数字、字母、特殊字符三种,\n长度属于6-16位之间");
+    }
+
+    @Bean
+    public BaseException EmailExistError() {
+        return new BaseException(1005, "邮箱已存在");
     }
 
     @Bean
@@ -44,11 +54,32 @@ public class ExceptionBean {
 
     @Bean
     public BaseException AuthFailError() {
-        return new BaseException(2001, "验证失败");
+        return new BaseException(2001, "邮箱验证失败");
+    }
+
+    @Bean
+    public BaseException EmailValidError() {
+        return new BaseException(2002, "邮箱不符合规定");
     }
 
     @Bean
     public BaseException FileTransError() {
         return new BaseException(3000, "文件转存失败");
     }
+
+    @Bean
+    public BaseException NoMaintainerError() {
+        return new BaseException(4000, "没有搜到维修人员啊兄弟");
+    }
+
+    @Bean
+    public BaseException NotFoundError() {
+        return new BaseException(4001, "查找不到对应");
+    }
+
+    @Bean
+    public BaseException DeleteFailError() {
+        return new BaseException(5000, "删除失败，请检查删除是否安全");
+    }
+
 }

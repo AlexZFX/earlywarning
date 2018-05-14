@@ -2,13 +2,17 @@ package com.alexzfx.earlywarninguser.service.impl;
 
 import com.alexzfx.earlywarninguser.entity.Role;
 import com.alexzfx.earlywarninguser.entity.User;
+import com.alexzfx.earlywarninguser.entity.request.Password;
 import com.alexzfx.earlywarninguser.exception.BaseException;
 import com.alexzfx.earlywarninguser.repository.RoleRepository;
 import com.alexzfx.earlywarninguser.repository.UserRepository;
 import com.alexzfx.earlywarninguser.service.UserService;
 import com.alexzfx.earlywarninguser.util.PasswordHash;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,6 +30,7 @@ import java.util.Collections;
  */
 @Service
 @Transactional
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -38,23 +43,25 @@ public class UserServiceImpl implements UserService {
 
     private final BaseException FileTransError;
 
-    private final BaseException PasswordValidError;
+    private final BaseException PwdValidError;
+
+    private final BaseException EmailValidError;
+
+    private final BaseException WrongPasswordError;
+
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository, BaseException AccountExistError, String RootPath, BaseException FileTransError, BaseException PasswordValidError) {
+    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository, BaseException AccountExistError, String RootPath, BaseException FileTransError, BaseException PwdValidError, BaseException EmailValidError, BaseException WrongPasswordError) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.AccountExistError = AccountExistError;
         this.RootPath = RootPath;
         this.FileTransError = FileTransError;
-        this.PasswordValidError = PasswordValidError;
+        this.PwdValidError = PwdValidError;
+        this.EmailValidError = EmailValidError;
+        this.WrongPasswordError = WrongPasswordError;
     }
 
-
-    @Override
-    public User getUserById(int id) {
-        return userRepository.getOne(id);
-    }
 
     @Override
     public User getUserByUsername(String username) {
@@ -65,15 +72,19 @@ public class UserServiceImpl implements UserService {
     public void modifyUserInfo(User userInfo) {
         User user = (User) SecurityUtils.getSubject().getPrincipal();
         user.setName(userInfo.getName());
-        user.setDescription(user.getDescription());
+        user.setDescription(userInfo.getDescription());
         userRepository.save(user);
     }
 
     @Override
     public void register(User user) {
+        //TODO 打开
         if (!validPassword(user.getPassword())) {
-            throw PasswordValidError;
+            throw PwdValidError;
         }
+//        if (!validEamil(user.getEmail())) {
+//            throw EmailValidError;
+//        }
         if (userRepository.findByUsername(user.getUsername()) != null) {
             throw AccountExistError;
         }
@@ -83,7 +94,7 @@ public class UserServiceImpl implements UserService {
             throw new BaseException(500, "密码加密失败");
         }
         //找到角色为用户
-        Role role = roleRepository.getOne(1);
+        Role role = roleRepository.findByName("user");
         user.setRoles(Collections.singletonList(role));
         userRepository.save(user);
     }
@@ -91,14 +102,16 @@ public class UserServiceImpl implements UserService {
     @Override
     public String uploadAvatar(MultipartFile file) {
         User user = (User) SecurityUtils.getSubject().getPrincipal();
-        String url = "/avatar/" + user.getUsername() + ".png";
+        user = userRepository.findByUsername(user.getUsername());
+        String url = "avatar/" + user.getUsername() + ".png";
         File avatar = new File(RootPath + url);
         if (!avatar.getParentFile().isDirectory()) {
             avatar.getParentFile().mkdirs();
         }
         try {
-            file.transferTo(avatar);
+            file.transferTo(avatar.getAbsoluteFile());
         } catch (IOException e) {
+            log.error(e.getLocalizedMessage());
             throw FileTransError;
         }
         user.setAvatar(url);
@@ -107,17 +120,63 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updatePassword(String password) {
+    public void updatePassword(Password password) {
+        User user = (User) SecurityUtils.getSubject().getPrincipal();
+        user = userRepository.findByUsername(user.getUsername());
+        String oldPassword = password.getOldPassword();
+        try {
+            PasswordHash.validatePassword(oldPassword, user.getPassword());
+            if (!validPassword(password.getNewPassword())) {
+                throw PwdValidError;
+            }
+            user.setPassword(PasswordHash.createHash(password.getNewPassword()));
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new BaseException(500, "密码加密失败");
+        }
+        userRepository.save(user);
+    }
+
+    @Override
+    public void resetPassword(String password) {
         if (!validPassword(password)) {
-            throw PasswordValidError;
+            throw PwdValidError;
         }
         User user = (User) SecurityUtils.getSubject().getPrincipal();
+        user = userRepository.findByUsername(user.getUsername());
         try {
             user.setPassword(PasswordHash.createHash(password));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new BaseException(500, "密码加密失败");
         }
         userRepository.save(user);
+    }
+
+    @Override
+    public void createMaintainer(User user) {
+        if (userRepository.findByUsername(user.getUsername()) != null) {
+            throw AccountExistError;
+        }
+        try {
+            user.setPassword(PasswordHash.createHash(user.getPassword()));
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new BaseException(500, "密码加密失败");
+        }
+        Role role = roleRepository.findByName("maintainer");
+        user.setRoles(Collections.singletonList(role));
+        userRepository.save(user);
+    }
+
+    @Override
+    public Page getAllUserInfo(String roleName, String keyWord, Pageable pageable) {
+        Role role = roleRepository.findByName(roleName);
+        if (role == null) {
+            return null;
+        }
+        if (keyWord != null) {
+            return userRepository.findByRoleIdAndUsernameLike(role.getId(), "%" + keyWord + "%", pageable);
+        } else {
+            return userRepository.findByRoleId(role.getId(), pageable);
+        }
     }
 
     /**
@@ -132,5 +191,20 @@ public class UserServiceImpl implements UserService {
                 && password.matches("^.*[/^/$/.//,;:'!@#%&/*/|/?/+/(/)/[/]/{/}]+.*$")
                 && password.length() > 5
                 && password.length() < 17;
+    }
+
+    /**
+     * 之前必须有内容且只能是字母（大小写）、数字、下划线(_)、减号（-）、点（.）
+     * 和最后一个点（.）之间必须有内容且只能是字母（大小写）、数字、点（.）、减号（-），且两个点不能挨着
+     * 最后一个点（.）之后必须有内容且内容只能是字母（大小写）、数字且长度为大于等于2个字节，小于等于6个字节
+     *
+     * @param email
+     * @return 邮箱是否符合验证
+     */
+    private boolean validEamil(String email) {
+        if (email == null) {
+            return false;
+        }
+        return email.matches("^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z0-9]{2,6}$");
     }
 }

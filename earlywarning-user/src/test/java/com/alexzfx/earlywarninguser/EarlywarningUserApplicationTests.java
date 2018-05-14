@@ -23,8 +23,10 @@ public class EarlywarningUserApplicationTests {
 	@Test
 	public void testRegister(){
 		User user = new User();
+        user.setUsername("admin");
 		user.setName("admin");
-		user.setPassword("0925");
+        user.setEmail("z1079911968@163.com");
+        user.setPassword("123.abc");
 		userService.register(user);
 	}
 

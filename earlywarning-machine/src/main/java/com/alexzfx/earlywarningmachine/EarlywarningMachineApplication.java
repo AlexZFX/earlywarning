@@ -9,4 +9,5 @@ public class EarlywarningMachineApplication {
     public static void main(String[] args) {
         SpringApplication.run(EarlywarningMachineApplication.class, args);
     }
+
 }

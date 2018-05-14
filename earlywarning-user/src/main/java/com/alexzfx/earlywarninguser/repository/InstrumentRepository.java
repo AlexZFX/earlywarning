@@ -18,4 +18,14 @@ public interface InstrumentRepository extends JpaRepository<Instrument, Integer>
     Page<Instrument> findByCategoryAndModel(InstCategory category, boolean model, Pageable pageable);
 
     Page<Instrument> findByCategoryAndCreater(InstCategory category, User creater, Pageable pageable);
+
+    Page<Instrument> findByCreater(User creater, Pageable pageable);
+
+    Page<Instrument> findByCreaterAndNameLike(User creater, String name, Pageable pageable);
+
+    Page<Instrument> findByModel(boolean model, Pageable pageable);
+
+    Long countByCategory(InstCategory category);
+
+    Page<Instrument> findByModelAndNameLike(boolean model, String name, Pageable pageable);
 }

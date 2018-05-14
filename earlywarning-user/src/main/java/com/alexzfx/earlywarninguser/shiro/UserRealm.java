@@ -5,10 +5,7 @@ import com.alexzfx.earlywarninguser.entity.Role;
 import com.alexzfx.earlywarninguser.entity.User;
 import com.alexzfx.earlywarninguser.exception.BaseException;
 import com.alexzfx.earlywarninguser.service.UserService;
-import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.authc.AuthenticationInfo;
-import org.apache.shiro.authc.AuthenticationToken;
-import org.apache.shiro.authc.SimpleAuthenticationInfo;
+import org.apache.shiro.authc.*;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
@@ -25,7 +22,6 @@ import java.util.Set;
  */
 public class UserRealm extends AuthorizingRealm {
 
-
     @Autowired
     private BaseException UnknownAccountError;
 
@@ -36,8 +32,12 @@ public class UserRealm extends AuthorizingRealm {
     //获取权限信息。
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
-        String username = (String) principalCollection.getPrimaryPrincipal();
-        //TODO 完善权限获取信息
+        String username;
+        if (principalCollection.getPrimaryPrincipal() instanceof String) {
+            username = (String) principalCollection.getPrimaryPrincipal();
+        } else {
+            username = ((User) principalCollection.getPrimaryPrincipal()).getUsername();
+        }
         User user = userService.getUserByUsername(username);
         Set<String> roleNames = new HashSet<>();
         Set<String> permissionNames = new HashSet<>();
@@ -59,7 +59,7 @@ public class UserRealm extends AuthorizingRealm {
         String username = (String) authenticationToken.getPrincipal();
         User user = userService.getUserByUsername(username);
         if (user == null) {
-            throw UnknownAccountError;
+            throw new UnknownAccountException();
         }
         return new SimpleAuthenticationInfo(
                 user, user.getPassword(), getName()

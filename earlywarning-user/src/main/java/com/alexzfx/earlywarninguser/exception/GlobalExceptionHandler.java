@@ -17,6 +17,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = {Exception.class})
     public BaseResponse unknownException(Exception e) {
         log.error("unknown error", e);
+        log.error(e.getLocalizedMessage());
         return new BaseResponse();
     }
 

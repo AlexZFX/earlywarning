@@ -39,6 +39,7 @@ public class VerCodeUtil {
             graphics.drawString(codeChar[index] + "", (i * 20) + 15, 20);
             captcha.append(codeChar[index]);
         }
+
         // 将生成的验证码code放入sessoin中
         session.setAttribute("verCode", captcha.toString());
         // 通过ImageIO将图片输出
@@ -48,7 +49,7 @@ public class VerCodeUtil {
     public static Boolean checkVerCode(Session session, String verCode) {
         // 获取存放在session中的验证码
         String code = (String) session.getAttribute("verCode");
-        if (code == null) {
+        if (code == null || verCode == null) {
             throw new BaseException(1000, "请先获取验证码");
         }
         // 获取页面提交的验证码

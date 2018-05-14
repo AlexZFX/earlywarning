@@ -11,5 +11,14 @@ import java.io.Serializable;
  */
 @Data
 public class MachineMessage implements Serializable {
+    int machineId;
+    int data;
 
+    public MachineMessage(int machineId, int data) {
+        this.machineId = machineId;
+        this.data = data;
+    }
+
+    public MachineMessage() {
+    }
 }

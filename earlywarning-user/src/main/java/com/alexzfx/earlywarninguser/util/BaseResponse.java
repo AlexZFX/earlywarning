@@ -1,6 +1,5 @@
 package com.alexzfx.earlywarninguser.util;
 
-import com.google.gson.annotations.Expose;
 import lombok.Data;
 
 @Data
@@ -19,11 +18,8 @@ public class BaseResponse<T> {
         EMPTY_SUCCESS_RESPONSE.setMsg(SUCCESS_INFO);
     }
 
-    @Expose
     private Integer ret;
-    @Expose
     private T data;
-    @Expose
     private String msg;
 
 
