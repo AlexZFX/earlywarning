@@ -44,6 +44,11 @@ public class User implements Serializable {
     @JSONField(serialize = false)
     private String verCode;
 
+//    //避免每次获取RoleNames的时候都创建一次
+//    @Transient
+//    @JSONField(serialize = false, deserialize = false)
+//    private static final Set set = new HashSet();
+
     public int getIsEmailLocked() {
         return isEmailLocked.getId();
     }
@@ -56,13 +61,18 @@ public class User implements Serializable {
         return isLocked.getId();
     }
 
+    @JSONField(serialize = false)
+    public LockStatus getEnumIsLocked() {
+        return isLocked;
+    }
+
     public void setIsLocked(LockStatus isLocked) {
         this.isLocked = isLocked;
     }
 
     @JSONField(serialize = false)
     public Set<String> getRoleNames() {
-        Set set = new HashSet();
+        Set set = new HashSet();//考虑可以使用静态对象优化，但这个方法使用次数小。
         if (roles != null) { //不判空的话，在返回时，序列化会导致空指针异常。不知道为什么序列化时 会调用这个方法
             for (Role role : roles) {
                 set.add(role.getName());

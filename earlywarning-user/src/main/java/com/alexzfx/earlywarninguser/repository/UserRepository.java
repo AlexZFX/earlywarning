@@ -5,6 +5,7 @@ import com.alexzfx.earlywarninguser.entity.e.MaintainStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -34,4 +35,12 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     @Query("select u from User u inner join u.roles r where r.id=?1")
     Page findByRoleId(Integer id, Pageable pageable);
+
+    @Modifying
+    @Query(nativeQuery = true, value = "update user u left join user_role r on u.id=r.uid set u.is_locked=0 where u.id in (?1) and r.role_id <> ?2")
+    void lockUsers(List<Integer> intIds, Integer rid);
+
+    @Modifying
+    @Query(value = "update User u set u.isLocked=1 where u.id in ?1")
+    void unlockUsers(List<Integer> intIds);
 }

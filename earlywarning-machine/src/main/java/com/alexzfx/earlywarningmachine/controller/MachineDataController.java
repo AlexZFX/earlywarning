@@ -43,15 +43,35 @@ public class MachineDataController {
         return JSON.toJSONString(list);
     }
 
-    @PostMapping(value = "/machineInfo")
-    public String machineDataCreater(@RequestParam(name = "machineId") Integer machineId, @RequestParam(name = "type", required = false) String type, @RequestParam(value = "time", required = false) String cron) {
+    @PostMapping("/resetTime")
+    public String resetTime(@RequestParam("machineId") Integer machineId, @RequestParam("time") String cron) {
+        if (!jobMap.containsKey(machineId)) {
+            return "该仪器不在运行";
+        }
+        TriggerKey triggerKey = TriggerKey.triggerKey(machineId.toString());
+        CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
+        CronTrigger trigger = TriggerBuilder.newTrigger().withIdentity(machineId.toString(), Scheduler.DEFAULT_GROUP).withSchedule(scheduleBuilder).build();
+        try {
+            scheduler.rescheduleJob(triggerKey, trigger);
+        } catch (SchedulerException e) {
+            e.printStackTrace();
+            return "failed";
+        }
+        return "success";
+    }
+
+    @PostMapping(value = "/startMachineInfo")
+    public String machineDataCreater(@RequestParam(name = "machineId") Integer machineId, @RequestParam(name = "cid", required = false) Integer categoryId, @RequestParam(value = "time", required = false) String cron) {
+        if (jobMap.containsKey(machineId) || pausedJobMap.containsKey(machineId)) {
+            return "打扰了，该仪器已经有数据了";
+        }
         JobDataMap dataMap = new JobDataMap();
         dataMap.put("machineId", machineId);
-        dataMap.put("type", type);
+        dataMap.put("type", categoryId);
         dataMap.put("sender", sender);
         JobKey jobKey = new JobKey(machineId.toString());
         if (cron == null) {
-            cron = "0/10 * * * * ? *";
+            cron = "* 0/1 * * * ? *";
         }
         JobDetail jobDetail = JobBuilder.newJob(MachineDataTask.class).withIdentity(jobKey).setJobData(dataMap).build();
         CronScheduleBuilder scheduleBuilder;
@@ -60,7 +80,7 @@ public class MachineDataController {
         } catch (RuntimeException e) {
             return "时间表达式错误";
         }
-        CronTrigger cronTrigger = TriggerBuilder.newTrigger().withSchedule(scheduleBuilder).build();
+        CronTrigger cronTrigger = TriggerBuilder.newTrigger().withIdentity(machineId.toString(), Scheduler.DEFAULT_GROUP).withSchedule(scheduleBuilder).build();
         try {
             scheduler.scheduleJob(jobDetail, cronTrigger);
             log.info(machineId + "号仪器开始任务，时间间隔为" + cron);

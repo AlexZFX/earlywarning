@@ -12,9 +12,9 @@ import java.io.Serializable;
 @Data
 public class MachineMessage implements Serializable {
     int machineId;
-    int data;
+    double data;
 
-    public MachineMessage(int machineId, int data) {
+    public MachineMessage(int machineId, double data) {
         this.machineId = machineId;
         this.data = data;
     }

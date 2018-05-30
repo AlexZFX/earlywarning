@@ -110,4 +110,14 @@ public class MachineDataServiceImpl implements MachineDataService {
             log.error("消息中的仪器不存在");
         }
     }
+
+    @Override
+    public List<MachineData> getAllData() {
+        return machineDataRepository.findAll();
+    }
+
+    @Override
+    public List<MachineData> getDataByMachineId(Integer machineId) {
+        return machineDataRepository.findByMachineId(machineId);
+    }
 }

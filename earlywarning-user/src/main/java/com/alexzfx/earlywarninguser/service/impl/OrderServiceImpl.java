@@ -59,7 +59,7 @@ public class OrderServiceImpl implements OrderService {
             User user1;//用户
             for (InstOrder order : page.getContent()) {
                 user1 = userRepository.findById(order.getOwnerId()).get();
-                user1.setRoles(null);
+//                user1.setRoles(null); //会直接删除掉
                 order.setOwner(user1);
             }
         } else {
@@ -67,7 +67,6 @@ public class OrderServiceImpl implements OrderService {
             User maintainer;
             for (InstOrder order : page.getContent()) {
                 maintainer = userRepository.findById(order.getMaintainerId()).get();
-                maintainer.setRoles(null);
                 order.setMaintainer(maintainer);
             }
         }
@@ -86,11 +85,9 @@ public class OrderServiceImpl implements OrderService {
         if (user.getId().equals(order.getOwnerId()) || user.getId().equals(order.getMaintainerId())) {
             if (user.getRoleNames().contains("user")) {
                 User maintainer = userRepository.findById(order.getMaintainerId()).get();
-                maintainer.setRoles(null);
                 order.setMaintainer(maintainer);
             } else {
                 User user1 = userRepository.findById(order.getOwnerId()).get();
-                user1.setRoles(null);
                 order.setOwner(user1);
             }
             return order;
@@ -118,7 +115,6 @@ public class OrderServiceImpl implements OrderService {
             User user1;//用户
             for (InstOrder order : page.getContent()) {
                 user1 = userRepository.findById(order.getOwnerId()).get();
-                user1.setRoles(null);
                 order.setOwner(user1);
             }
         } else if (user.getRoleNames().contains("user")) {
@@ -126,7 +122,6 @@ public class OrderServiceImpl implements OrderService {
             User maintainer;
             for (InstOrder order : page.getContent()) {
                 maintainer = userRepository.findById(order.getMaintainerId()).get();
-                maintainer.setRoles(null);
                 order.setMaintainer(maintainer);
             }
         }

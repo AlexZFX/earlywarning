@@ -51,4 +51,10 @@ public class MessageServiceImpl implements MessageService {
         User user = (User) SecurityUtils.getSubject().getPrincipal();
         messageRepository.deleteByIdsAndUid(intIds, user.getId());
     }
+
+    @Override
+    public Long getUnReadNum() {
+        int uid = ((User) SecurityUtils.getSubject().getPrincipal()).getId();
+        return messageRepository.countByUidAndUnRead(uid);
+    }
 }

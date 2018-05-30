@@ -50,9 +50,11 @@ public class MsgPushServiceImpl implements MsgPushService {
     @Resource(name = "maintainerSocketPath")
     private String maintainerSocketPath;
 
+    private final BaseException OperationError;
+
 
     @Autowired
-    public MsgPushServiceImpl(SocketSessionRegistry register, SimpMessagingTemplate template, InstOrderRepository instOrderRepository, UserRepository userRepository, RoleRepository roleRepository, MessageRepository messageRepository, BaseException PermissionDenied) {
+    public MsgPushServiceImpl(SocketSessionRegistry register, SimpMessagingTemplate template, InstOrderRepository instOrderRepository, UserRepository userRepository, RoleRepository roleRepository, MessageRepository messageRepository, BaseException PermissionDenied, BaseException OperationError) {
         this.register = register;
         this.template = template;
         this.instOrderRepository = instOrderRepository;
@@ -60,6 +62,7 @@ public class MsgPushServiceImpl implements MsgPushService {
         this.roleRepository = roleRepository;
         this.messageRepository = messageRepository;
         this.PermissionDenied = PermissionDenied;
+        this.OperationError = OperationError;
     }
 
     //对用户和维修人员进行任务分配，并对在线的用户进行消息推送
@@ -83,7 +86,7 @@ public class MsgPushServiceImpl implements MsgPushService {
         //考虑是否需要抽象出来，但感觉复用性很小
         userMessage.setContent("尊敬的" + username + ",您好。"
                 + "您所创建的仪器" + instrument.getName() + "(" + instrument.getId() + ")"
-                + "于" + timestamp.getYear() + "年" + timestamp.getMonth() + "月" + timestamp.getDay() + "日"
+                + "于" + timestamp.getYear() + "年" + (timestamp.getMonth() + 1) + "月" + timestamp.getDate() + "日"
                 + timestamp.getHours() + "时" + timestamp.getMinutes() + "分" + timestamp.getSeconds() + "秒"
                 + "发生了告警，仪器数值为" + machineData.getData() + "(" + instrument.getThresholdValue() + ")。"
                 + "系统已将此任务分配给了工作人员" + maintainerName
@@ -101,7 +104,7 @@ public class MsgPushServiceImpl implements MsgPushService {
         maintainerMessage.setOrderId(order.getId());
         maintainerMessage.setContent("尊敬的" + maintainerName + ",您好。"
                 + "用户" + username + "所创建的仪器" + instrument.getName() + "(" + instrument.getId() + ")"
-                + "于" + (1900 + timestamp.getYear()) + "年" + timestamp.getMonth() + "月" + timestamp.getDay() + "日"
+                + "于" + (1900 + timestamp.getYear()) + "年" + (timestamp.getMonth() + 1) + "月" + timestamp.getDate() + "日"
                 + timestamp.getHours() + "时" + timestamp.getMinutes() + "分" + timestamp.getSeconds() + "秒"
                 + "发生了告警，仪器数值为" + machineData.getData() + "(" + instrument.getThresholdValue() + ")"
                 + "系统已将此任务分配给了您" + "用户联系方式为" + user.getEmail()
@@ -126,11 +129,14 @@ public class MsgPushServiceImpl implements MsgPushService {
             InstOrder order = instOrderRepository.getOne(id);
             Timestamp timestamp = new Timestamp(System.currentTimeMillis());
             order.setConfirmTime(timestamp);
-            order.setMaintainStatus(MaintainStatus.CONFIRMED);
+            if (order.getEnumMaintainStatus() == MaintainStatus.WAITCONFIRM) {
+                order.setMaintainStatus(MaintainStatus.CONFIRMED);
+            } else {
+                throw OperationError;
+            }
             instOrderRepository.save(order);
             User user = userRepository.getOne(order.getOwnerId());
             Instrument instrument = order.getInstrument();
-
             //创建消息并发送给仪器所有者
             Message userMessage = new Message();
             String username = user.getName() == null ? user.getUsername() : user.getName();
@@ -143,7 +149,7 @@ public class MsgPushServiceImpl implements MsgPushService {
             userMessage.setOrderId(order.getId());
             userMessage.setContent("尊敬的" + username + ",您好。"
                     + "您单号为" + order.getId() + "的订单已"
-                    + "于" + (1900 + timestamp.getYear()) + "年" + timestamp.getMonth() + "月" + timestamp.getDay() + "日"
+                    + "于" + (1900 + timestamp.getYear()) + "年" + (timestamp.getMonth() + 1) + "月" + timestamp.getDate() + "日"
                     + timestamp.getHours() + "时" + timestamp.getMinutes() + "分" + timestamp.getSeconds() + "秒"
                     + "被维修人员确认，您可以进入xx页面查看详情。");
             for (String s : register.getSessionIds(user.getUsername())) {
@@ -159,7 +165,11 @@ public class MsgPushServiceImpl implements MsgPushService {
             InstOrder order = instOrderRepository.getOne(id);
             Timestamp timestamp = new Timestamp(System.currentTimeMillis());
             order.setFixTime(timestamp);
-            order.setMaintainStatus(MaintainStatus.FIXING);
+            if (order.getEnumMaintainStatus() == MaintainStatus.CONFIRMED) {
+                order.setMaintainStatus(MaintainStatus.FIXING);
+            } else {
+                throw OperationError;
+            }
             instOrderRepository.save(order);
             User user = userRepository.getOne(order.getOwnerId());
             Instrument instrument = order.getInstrument();
@@ -176,7 +186,7 @@ public class MsgPushServiceImpl implements MsgPushService {
             userMessage.setOrderId(order.getId());
             userMessage.setContent("尊敬的" + username + ",您好。"
                     + "您单号为" + order.getId() + "的订单已"
-                    + "于" + (1900 + timestamp.getYear()) + "年" + timestamp.getMonth() + "月" + timestamp.getDay() + "日"
+                    + "于" + (1900 + timestamp.getYear()) + "年" + (timestamp.getMonth() + 1) + "月" + timestamp.getDate() + "日"
                     + timestamp.getHours() + "时" + timestamp.getMinutes() + "分" + timestamp.getSeconds() + "秒"
                     + "被维修人员开始维修，您可以进入xx页面查看详情。");
             for (String s : register.getSessionIds(user.getUsername())) {
@@ -192,7 +202,11 @@ public class MsgPushServiceImpl implements MsgPushService {
             InstOrder order = instOrderRepository.getOne(id);
             Timestamp timestamp = new Timestamp(System.currentTimeMillis());
             order.setFinishTime(timestamp);
-            order.setMaintainStatus(MaintainStatus.FINISHED);
+            if (order.getEnumMaintainStatus() == MaintainStatus.FIXING) {
+                order.setMaintainStatus(MaintainStatus.FINISHED);
+            } else {
+                throw OperationError;
+            }
             instOrderRepository.save(order);
             User user = userRepository.getOne(order.getOwnerId());
             Instrument instrument = order.getInstrument();
@@ -209,7 +223,7 @@ public class MsgPushServiceImpl implements MsgPushService {
             userMessage.setOrderId(order.getId());
             userMessage.setContent("尊敬的" + username + ",您好。"
                     + "您单号为" + order.getId() + "的订单已"
-                    + "于" + (1900 + timestamp.getYear()) + "年" + timestamp.getMonth() + "月" + timestamp.getDay() + "日"
+                    + "于" + (1900 + timestamp.getYear()) + "年" + (timestamp.getMonth() + 1) + "月" + timestamp.getDate() + "日"
                     + timestamp.getHours() + "时" + timestamp.getMinutes() + "分" + timestamp.getSeconds() + "秒"
                     + "被维修人员确认完结，您可以进入xx页面查看详情。");
             for (String s : register.getSessionIds(user.getUsername())) {

@@ -81,8 +81,8 @@ public class InstrumentController {
     }
 
     @PostMapping("/deleteInstrument")
-    public BaseResponse deleteInstrument(@RequestParam("id") Integer id) {
-        instrumentService.deleteInstrumentById(id);
+    public BaseResponse deleteInstrument(@RequestBody Instrument instrument) {
+        instrumentService.deleteInstrumentById(instrument.getId());
         return EMPTY_SUCCESS_RESPONSE;
     }
 

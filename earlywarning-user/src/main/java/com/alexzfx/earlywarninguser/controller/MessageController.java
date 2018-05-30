@@ -49,6 +49,12 @@ public class MessageController {
         return new BaseResponse<>(page);
     }
 
+    @GetMapping("/getUnReadNum")
+    public BaseResponse<Long> getUnReadNum() {
+        Long num = messageService.getUnReadNum();
+        return new BaseResponse<>(num);
+    }
+
     @PostMapping("/deleteMessage")
     public BaseResponse deleteMessage(@RequestBody RequestList requestList) {
         messageService.deleteMessage(requestList.getIntIds());

@@ -11,6 +11,12 @@ import com.alexzfx.earlywarninguser.repository.InstrumentRepository;
 import com.alexzfx.earlywarninguser.repository.UserRepository;
 import com.alexzfx.earlywarninguser.service.InstrumentService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,10 +25,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Author : Alex
@@ -54,7 +64,11 @@ public class InstrumentServiceImpl implements InstrumentService {
 
     private final BaseException FileTransError;
 
-    public InstrumentServiceImpl(CategoryRepository categoryRepository, InstrumentRepository instrumentRepository, UserRepository userRepository, InstOrderRepository instOrderRepository, String RootPath, BaseException PermissionDenied, BaseException NotFoundError, BaseException DeleteFailError, BaseException UnknownAccountError, BaseException FileTransError) {
+    private final HttpClient httpClient;
+
+    private final ExecutorService executorService;
+
+    public InstrumentServiceImpl(CategoryRepository categoryRepository, InstrumentRepository instrumentRepository, UserRepository userRepository, InstOrderRepository instOrderRepository, String RootPath, BaseException PermissionDenied, BaseException NotFoundError, BaseException DeleteFailError, BaseException UnknownAccountError, BaseException FileTransError, HttpClient httpClient, ExecutorService executorService) {
         this.categoryRepository = categoryRepository;
         this.instrumentRepository = instrumentRepository;
         this.userRepository = userRepository;
@@ -65,6 +79,8 @@ public class InstrumentServiceImpl implements InstrumentService {
         this.DeleteFailError = DeleteFailError;
         this.UnknownAccountError = UnknownAccountError;
         this.FileTransError = FileTransError;
+        this.httpClient = httpClient;
+        this.executorService = executorService;
     }
 
     @Override
@@ -130,6 +146,7 @@ public class InstrumentServiceImpl implements InstrumentService {
     @Override
     public void createModelInstrument(Instrument instrument) {
         instrument.setCreater((User) SecurityUtils.getSubject().getPrincipal());
+
         instrument.setModel(true);
         instrument.setCategory(categoryRepository.getOne(instrument.getCid()));
         instrument.setPicUrl(instrument.getPicUrl());
@@ -148,14 +165,18 @@ public class InstrumentServiceImpl implements InstrumentService {
 
     @Override
     public Integer createInstrument(Instrument instrument) {
+        //TODO 数据自动绑定
         instrument.setId(null);
         instrument.setCreater((User) SecurityUtils.getSubject().getPrincipal());
         instrument.setCategory(categoryRepository.getOne(instrument.getCid()));
         instrument.setModel(false);
         instrument.setPicUrl(instrument.getPicUrl());
-        instrument = instrumentRepository.save(instrument);
-        return instrument.getId();
+        final Instrument save = instrumentRepository.save(instrument);
+        //创建一个instrument的复制，数据绑定过程中的对instrument的修改
+        executorService.execute(() -> autoBindData(save));
+        return save.getId();
     }
+
 
     @Override
     public void modifyInstrument(Instrument instrument) {
@@ -171,6 +192,7 @@ public class InstrumentServiceImpl implements InstrumentService {
         oldIns.setDescription(instrument.getDescription());
         oldIns.setThresholdValue(instrument.getThresholdValue());
         oldIns.setName(instrument.getName());
+        oldIns.setPicUrl(instrument.getPicUrl());
         instrumentRepository.save(oldIns);
     }
 
@@ -214,7 +236,7 @@ public class InstrumentServiceImpl implements InstrumentService {
             log.error(e.getLocalizedMessage());
             throw FileTransError;
         }
-        return fileName;
+        return "/" + fileName;
     }
 
     @Override
@@ -222,7 +244,8 @@ public class InstrumentServiceImpl implements InstrumentService {
         try {
             Instrument instrument = instrumentRepository.findById(id).get();
             User user = (User) SecurityUtils.getSubject().getPrincipal();
-            if (instrument.getCreater().getId() != user.getId()) {
+            //不是所有者 并且 不是管理员
+            if (!instrument.getCreater().getId().equals(user.getId()) && !user.getRoleNames().contains("admin")) {
                 throw PermissionDenied;
             }
             Long oid = instOrderRepository.findIsFixing(id, MaintainStatus.FINISHED);
@@ -235,4 +258,33 @@ public class InstrumentServiceImpl implements InstrumentService {
             throw new BaseException(500, "仪器不存在");
         }
     }
+
+
+    /**
+     * 利用http请求进行自动的数据绑定
+     *
+     * @param instrument
+     */
+    private void autoBindData(Instrument instrument) {
+        String url = "localhost:8081/startMachineInfo";
+        HttpPost httpPost = new HttpPost(url);
+        List<NameValuePair> nameValuePairs = new ArrayList<>();
+        nameValuePairs.add(new BasicNameValuePair("machineId", instrument.getId().toString()));
+        nameValuePairs.add(new BasicNameValuePair("cid", String.valueOf(instrument.getCid())));
+        try {
+            httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+            HttpResponse response = httpClient.execute(httpPost);
+            BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+            StringBuilder builder = new StringBuilder();
+            String line;
+            String NL = System.getProperty("line.separator");
+            while ((line = in.readLine()) != null) {
+                builder.append(line).append(NL);
+            }
+            log.info("仪器id:" + instrument.getId() + "   返回message" + builder.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }

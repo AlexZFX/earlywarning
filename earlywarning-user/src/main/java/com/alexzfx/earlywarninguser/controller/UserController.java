@@ -2,6 +2,7 @@ package com.alexzfx.earlywarninguser.controller;
 
 import com.alexzfx.earlywarninguser.entity.User;
 import com.alexzfx.earlywarninguser.entity.request.Password;
+import com.alexzfx.earlywarninguser.entity.request.RequestList;
 import com.alexzfx.earlywarninguser.exception.BaseException;
 import com.alexzfx.earlywarninguser.service.MailService;
 import com.alexzfx.earlywarninguser.service.UserService;
@@ -43,6 +44,7 @@ public class UserController {
     private final BaseException VerCodeError;
 
     private final BaseException WrongPasswordError;
+
     private final BaseException UnknownAccountError;
 
 
@@ -63,13 +65,33 @@ public class UserController {
         return new BaseResponse<>(page);
     }
 
+    @PostMapping("/admin/createMaintainer")
+    @RequiresRoles(value = {"admin"})
+    public BaseResponse createMaintainer(@RequestBody User user) {
+        userService.createMaintainer(user);
+        return EMPTY_SUCCESS_RESPONSE;
+    }
+
+    @PostMapping("/admin/lockUser")
+    @RequiresRoles(value = {"admin"})
+    public BaseResponse lockUsers(@RequestBody RequestList list) {
+        userService.lockUsers(list.getIntIds());
+        return EMPTY_SUCCESS_RESPONSE;
+    }
+
+    @PostMapping("/admin/unlockUser")
+    @RequiresRoles(value = {"admin"})
+    public BaseResponse unlockUsers(@RequestBody RequestList list) {
+        userService.unlockUsers(list.getIntIds());
+        return EMPTY_SUCCESS_RESPONSE;
+    }
 
     @GetMapping("/getVerCode")
     public void getVerCode() {
         Subject subject = SecurityUtils.getSubject();
         try {
             response.setContentType("image/png");
-            VerCodeUtil.getVetCode(subject.getSession(), response.getOutputStream());
+            VerCodeUtil.getVerCode(subject.getSession(), response.getOutputStream());
         } catch (IOException e) {
             throw new BaseException();
         }
@@ -97,7 +119,9 @@ public class UserController {
     @GetMapping("/getUserInfo")
     public BaseResponse<User> getUserInfo() {
         User user = (User) SecurityUtils.getSubject().getPrincipal();
-        user = userService.getUserByUsername(user.getUsername());
+        if (user != null) {
+            user = userService.getUserByUsername(user.getUsername());
+        }
         return new BaseResponse<>(user);
     }
 
@@ -146,16 +170,10 @@ public class UserController {
         return EMPTY_SUCCESS_RESPONSE;
     }
 
-    @PostMapping("/admin/createMaintainer")
-    @RequiresRoles(value = {"admin"})
-    public BaseResponse createMaintainer(@RequestBody User user) {
-        userService.createMaintainer(user);
-        return EMPTY_SUCCESS_RESPONSE;
-    }
-
     @GetMapping("/logout")
-    public void logout() {
+    public BaseResponse logout() {
         SecurityUtils.getSubject().logout();
+        return EMPTY_SUCCESS_RESPONSE;
     }
 
 }

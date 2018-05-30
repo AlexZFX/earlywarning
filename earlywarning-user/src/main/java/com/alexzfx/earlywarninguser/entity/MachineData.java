@@ -1,12 +1,11 @@
 package com.alexzfx.earlywarninguser.entity;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.io.Serializable;
+import java.sql.Timestamp;
 
 /**
  * Author : Alex
@@ -19,7 +18,11 @@ import java.io.Serializable;
 public class MachineData implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JSONField(serialize = false)
     private Integer id;
+    @JSONField(serialize = false)
     private int machineId;
     private int data;
+    @Column(columnDefinition = "timestamp not null default current_timestamp")
+    private Timestamp time;
 }

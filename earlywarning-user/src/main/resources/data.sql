@@ -17,4 +17,8 @@ select
 from user user0_ inner join user_role roles1_ on user0_.id = roles1_.uid
   inner join role role2_ on roles1_.role_id = role2_.id
 where role2_.id = ? and (user0_.username like ?)
-order by ?, user0_.id asc
+order by ?, user0_.id asc;
+
+update user u left join user_role r on u.id = r.uid
+set u.is_locked = 0
+where u.id in (?1) and r.role_id <> ?2;

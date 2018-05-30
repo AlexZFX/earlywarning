@@ -3,6 +3,7 @@ package com.alexzfx.earlywarninguser.shiro;
 import com.alexzfx.earlywarninguser.entity.Permission;
 import com.alexzfx.earlywarninguser.entity.Role;
 import com.alexzfx.earlywarninguser.entity.User;
+import com.alexzfx.earlywarninguser.entity.e.LockStatus;
 import com.alexzfx.earlywarninguser.exception.BaseException;
 import com.alexzfx.earlywarninguser.service.UserService;
 import org.apache.shiro.authc.*;
@@ -21,9 +22,6 @@ import java.util.Set;
  * Description :
  */
 public class UserRealm extends AuthorizingRealm {
-
-    @Autowired
-    private BaseException UnknownAccountError;
 
     @Autowired
     private UserService userService;
@@ -60,6 +58,9 @@ public class UserRealm extends AuthorizingRealm {
         User user = userService.getUserByUsername(username);
         if (user == null) {
             throw new UnknownAccountException();
+        }
+        if (user.getEnumIsLocked() == LockStatus.LOCKED) {
+            throw new BaseException(1006, "用户被锁定");
         }
         return new SimpleAuthenticationInfo(
                 user, user.getPassword(), getName()

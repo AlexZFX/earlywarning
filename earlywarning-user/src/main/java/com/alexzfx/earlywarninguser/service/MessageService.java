@@ -18,4 +18,6 @@ public interface MessageService {
     void readAllMsg();
 
     void deleteMessage(List<Integer> intIds);
+
+    Long getUnReadNum();
 }

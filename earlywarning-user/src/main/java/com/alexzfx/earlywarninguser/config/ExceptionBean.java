@@ -48,6 +48,11 @@ public class ExceptionBean {
     }
 
     @Bean
+    public BaseException LockedUserError() {
+        return new BaseException(1006, "用户被锁定，登录失败");
+    }
+
+    @Bean
     public BaseException MailSendError() {
         return new BaseException(2000, "邮件发送失败");
     }
@@ -75,6 +80,11 @@ public class ExceptionBean {
     @Bean
     public BaseException NotFoundError() {
         return new BaseException(4001, "查找不到对应");
+    }
+
+    @Bean
+    public BaseException OperationError() {
+        return new BaseException(4002, "操作行为错误");
     }
 
     @Bean

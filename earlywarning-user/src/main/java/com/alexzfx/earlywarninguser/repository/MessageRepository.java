@@ -32,4 +32,7 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
     @Query(value = "delete from Message m where m.id in ?1 and m.uid=?2")
     void deleteByIdsAndUid(List<Integer> ids, int uid);
 
+    @Query(value = "select count (m.id) from Message m where m.uid=?1 and m.isRead=false")
+    Long countByUidAndUnRead(int uid);
+
 }

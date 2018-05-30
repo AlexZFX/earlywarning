@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -58,8 +59,10 @@ public class MailServiceImpl implements MailService {
 
     private final BaseException EmailValidError;
 
+    private final ExecutorService executorService;
+
     @Autowired
-    public MailServiceImpl(JavaMailSender sender, StringRedisTemplate redisTemplate, BaseException AuthFailError, BaseException EmailExistError, UserRepository userRepository, BaseException MailSendError, BaseException EmailValidError) {
+    public MailServiceImpl(JavaMailSender sender, StringRedisTemplate redisTemplate, BaseException AuthFailError, BaseException EmailExistError, UserRepository userRepository, BaseException MailSendError, BaseException EmailValidError, ExecutorService executorService) {
         this.sender = sender;
         this.redisTemplate = redisTemplate;
         this.AuthFailError = AuthFailError;
@@ -67,6 +70,7 @@ public class MailServiceImpl implements MailService {
         this.userRepository = userRepository;
         this.MailSendError = MailSendError;
         this.EmailValidError = EmailValidError;
+        this.executorService = executorService;
     }
 
 
@@ -86,7 +90,7 @@ public class MailServiceImpl implements MailService {
             throw EmailExistError;
         }
         //发现这段操作很耗时间，另开线程单独执行
-        Thread thread = new Thread(() -> {
+        executorService.execute(() -> {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(from);
             message.setTo(mail);
@@ -107,7 +111,6 @@ public class MailServiceImpl implements MailService {
                 throw MailSendError;
             }
         });
-        thread.start();
     }
 
     /**
@@ -134,7 +137,7 @@ public class MailServiceImpl implements MailService {
         Timestamp timestamp = order.getCreateTime();
         String username = user.getName() == null ? user.getUsername() : user.getName();
         String maintainerName = maintainer.getName() == null ? maintainer.getUsername() : maintainer.getName();
-        new Thread(() -> {
+        executorService.execute(() -> {
             if (user.getIsEmailLocked() != LockStatus.LOCKED.getId()) {
                 SimpleMailMessage message = new SimpleMailMessage();
                 message.setFrom(from);
@@ -142,7 +145,7 @@ public class MailServiceImpl implements MailService {
                 message.setSubject("【EarlyWarning通知】");
                 String msg = "尊敬的" + username + ",您好。"
                         + "您所创建的仪器" + instrument.getName() + "(" + instrument.getId() + ")"
-                        + "于" + (1900 + timestamp.getYear()) + "年" + timestamp.getMonth() + "月" + timestamp.getDay() + "日"
+                        + "于" + (1900 + timestamp.getYear()) + "年" + (timestamp.getMonth() + 1) + "月" + timestamp.getDate() + "日"
                         + timestamp.getHours() + "时" + timestamp.getMinutes() + "分" + timestamp.getSeconds() + "秒"
                         + "发生了告警，仪器数值为" + machineData.getData() + "(" + instrument.getThresholdValue() + ")。"
                         + "系统已将此任务分配给了工作人员" + maintainerName
@@ -154,8 +157,8 @@ public class MailServiceImpl implements MailService {
                     throw MailSendError;
                 }
             }
-        }).start();
-        new Thread(() -> {
+        });
+        executorService.execute(() -> {
             if (maintainer.getIsEmailLocked() != LockStatus.LOCKED.getId()) {
                 SimpleMailMessage message = new SimpleMailMessage();
                 message.setFrom(from);
@@ -163,7 +166,7 @@ public class MailServiceImpl implements MailService {
                 message.setSubject("【EarlyWarning通知】");
                 String msg = ("尊敬的" + maintainerName + ",您好。"
                         + "用户" + username + "所创建的仪器" + instrument.getName() + "(" + instrument.getId() + ")"
-                        + "于" + (1900 + timestamp.getYear()) + "年" + timestamp.getMonth() + "月" + timestamp.getDay() + "日"
+                        + "于" + (1900 + timestamp.getYear()) + "年" + (timestamp.getMonth() + 1) + "月" + timestamp.getDate() + "日"
                         + timestamp.getHours() + "时" + timestamp.getMinutes() + "分" + timestamp.getSeconds() + "秒"
                         + "发生了告警，仪器数值为" + machineData.getData() + "(" + instrument.getThresholdValue() + ")"
                         + "系统已将此任务分配给了您" + "用户联系方式为" + user.getEmail()
@@ -175,7 +178,7 @@ public class MailServiceImpl implements MailService {
                     throw MailSendError;
                 }
             }
-        }).start();
+        });
     }
 
 

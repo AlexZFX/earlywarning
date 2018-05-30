@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Author : Alex
@@ -114,6 +115,7 @@ public class UserServiceImpl implements UserService {
             log.error(e.getLocalizedMessage());
             throw FileTransError;
         }
+        url = "/" + url;
         user.setAvatar(url);
         userRepository.save(user);
         return url;
@@ -177,6 +179,17 @@ public class UserServiceImpl implements UserService {
         } else {
             return userRepository.findByRoleId(role.getId(), pageable);
         }
+    }
+
+    @Override
+    public void lockUsers(List<Integer> intIds) {
+        Role role = roleRepository.findByName("admin");
+        userRepository.lockUsers(intIds, role.getId());
+    }
+
+    @Override
+    public void unlockUsers(List<Integer> intIds) {
+        userRepository.unlockUsers(intIds);
     }
 
     /**

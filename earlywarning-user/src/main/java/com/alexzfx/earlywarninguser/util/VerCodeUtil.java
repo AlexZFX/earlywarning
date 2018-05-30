@@ -22,7 +22,7 @@ public class VerCodeUtil {
     // 验证码中所使用到的字符
     private static final char[] codeChar = "ABCDEFGHJKMNOPQRSTUVWXYZabcdefghjkmnopqrstuvwxyz0123456".toCharArray();
 
-    public static void getVetCode(Session session, OutputStream os) throws IOException {
+    public static void getVerCode(Session session, OutputStream os) throws IOException {
         // 用于绘制图片，设置图片的长宽和图片类型（RGB)
         BufferedImage bi = new BufferedImage(IMG_HEIGHT, IMG_WIDTH, BufferedImage.TYPE_INT_RGB);
         // 获取绘图工具

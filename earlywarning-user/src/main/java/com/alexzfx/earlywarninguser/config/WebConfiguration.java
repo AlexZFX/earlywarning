@@ -3,16 +3,22 @@ package com.alexzfx.earlywarninguser.config;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alibaba.fastjson.support.config.FastJsonConfig;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.scheduling.concurrent.ThreadPoolExecutorFactoryBean;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Author : Alex
@@ -25,7 +31,7 @@ public class WebConfiguration implements WebMvcConfigurer {
     @Value("${web.upload-path}")
     private String rootPath;
 
-    //排除jackson的依赖，将Gson设置为json处理器
+    //排除jackson的依赖，将fastJson设置为json处理器
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         converters.removeIf(httpMessageConverter -> httpMessageConverter instanceof MappingJackson2HttpMessageConverter); // 删除MappingJackson2HttpMessageConverter
@@ -81,5 +87,38 @@ public class WebConfiguration implements WebMvcConfigurer {
         return rootPath;
     }
 
+    @Bean(name = "httpClientConnectionManager")
+    public PoolingHttpClientConnectionManager getHttpClientConnectionManager() {
+        PoolingHttpClientConnectionManager httpClientConnectionManager = new PoolingHttpClientConnectionManager();
+        //连接池最大连接数
+        httpClientConnectionManager.setMaxTotal(10);
+        //单个路由的最大连接数，必小于maxTotal,本机中只使用一个地址，故设置为和maxTotal相等
+        httpClientConnectionManager.setDefaultMaxPerRoute(10);
+        return httpClientConnectionManager;
+    }
 
+    @Bean(value = "httpClientBuilder")
+    public HttpClientBuilder httpClientBuilder(@Qualifier("httpClientConnectionManager") PoolingHttpClientConnectionManager manager) {
+        HttpClientBuilder builder = HttpClientBuilder.create();
+        builder.setConnectionManager(manager);
+        return builder;
+    }
+
+    @Bean
+    public CloseableHttpClient httpClient(@Qualifier("httpClientBuilder") HttpClientBuilder builder) {
+        return builder.build();
+    }
+
+    /**
+     * factoryBean的参数应该以配置文件方式配置，这里为了方便没用
+     *
+     * @return
+     */
+    @Bean
+    public ExecutorService executorService() {
+        ThreadPoolExecutorFactoryBean factoryBean = new ThreadPoolExecutorFactoryBean();
+        factoryBean.setCorePoolSize(2);
+        factoryBean.setMaxPoolSize(10);
+        return factoryBean.getObject();
+    }
 }

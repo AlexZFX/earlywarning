@@ -26,16 +26,33 @@ public class MachineDataTask implements InterruptableJob {
     public void execute(JobExecutionContext jobExecutionContext) {
         JobDataMap map = jobExecutionContext.getMergedJobDataMap();
         int machineId = map.getInt("machineId");
-        String type = map.getString("type");
-        int data = new Random().nextInt(15);
+        String type = map.getString("cid");
+        double data = getData();
         MessageSender sender = (MessageSender) map.get("sender");
         MachineMessage machineMessage = new MachineMessage(machineId, data);
         log.info(machineMessage.toString());
         sender.machineDataSender(machineMessage);
     }
 
+
     @Override
     public void interrupt() {
-
     }
+
+    private double getData() {
+        Random random = new Random();
+        double data = 0;
+        int magicNum = 40;
+        int magicChange = 10;
+        double magicScale = 0.07;
+        double radians = Math.toRadians(random.nextDouble() * 360);
+        double change = 5 * Math.sin(radians);
+        data = magicNum + change;
+        if (magicScale > random.nextDouble()) {
+            data += random.nextInt(magicChange);
+        }
+        return data;
+    }
+
+
 }

@@ -53,4 +53,5 @@ public class Role implements Serializable {
     public void setIsLocked(LockStatus isLocked) {
         this.isLocked = isLocked;
     }
+
 }

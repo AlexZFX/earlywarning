@@ -2,6 +2,7 @@ package com.alexzfx.earlywarninguser.config;
 
 import com.alexzfx.earlywarninguser.shiro.MyCredentialsMatcher;
 import com.alexzfx.earlywarninguser.shiro.UserRealm;
+import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.spring.LifecycleBeanPostProcessor;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
@@ -38,8 +39,13 @@ public class ShiroConfig {
     @Value("${spring.redis.password}")
     private String password;
 
+    /**
+     * Shiro 生命周期处理器
+     *
+     * @return
+     */
     @Bean
-    public static LifecycleBeanPostProcessor getLifecycleBeanPostProcessor() {
+    public static LifecycleBeanPostProcessor lifecycleBeanPostProcessor() {
         return new LifecycleBeanPostProcessor();
     }
 
@@ -66,7 +72,7 @@ public class ShiroConfig {
         //未授权页面
         shiroFilterFactoryBean.setUnauthorizedUrl("/403.html");
         //配置不会被拦截的链接 ，顺序判断。拦截器
-        Map<String, String> filterChainDefinitionMap = new LinkedHashMap<String, String>();
+        Map<String, String> filterChainDefinitionMap = new LinkedHashMap<>();
         //配置退出 过滤器,其中的具体的退出代码Shiro已经替我们实现了
         //<!-- 过滤链定义，从上向下顺序执行，一般将 /**放在最为下边 -->:这是一个坑呢，一不小心代码就不好使了;
         //<!-- authc:所有url都必须认证通过才可以访问; anon:所有url都都可以匿名访问-->
@@ -85,7 +91,8 @@ public class ShiroConfig {
          * filterChainDefinitionMap.put(“/add”, “roles[100002]，perms[权限添加]”);
          * 就说明访问/add这个链接必须要有“权限添加”这个权限和具有“100002”这个角色才可以访问。
          * */
-        filterChainDefinitionMap.put("/logout", "logout");
+        //自定义这个logout接口
+//        filterChainDefinitionMap.put("/logout", "logout");
         filterChainDefinitionMap.put("/static/**", "anon");
         filterChainDefinitionMap.put("/register", "anon");
         filterChainDefinitionMap.put("/login", "anon");
@@ -107,6 +114,8 @@ public class ShiroConfig {
         securityManager.setCacheManager(cacheManager());
         // 自定义session管理 使用redis
         securityManager.setSessionManager(sessionManager());
+        //加上这一句将SecurityManager设置到系统环境中去，从而在socket的listener中可以拿到subject,仍然为空。
+        SecurityUtils.setSecurityManager(securityManager);
         return securityManager;
     }
 
@@ -198,5 +207,25 @@ public class ShiroConfig {
         return sessionManager;
     }
 
+
+    /**
+     * 开启Shiro的注解(如@RequiresRoles,@RequiresPermissions),需借助SpringAOP扫描使用Shiro注解的类,并在必要时进行安全逻辑验证
+     * 配置以下两个bean(DefaultAdvisorAutoProxyCreator(可选)和AuthorizationAttributeSourceAdvisor)即可实现此功能
+     *
+     * @return
+     */
+//    @Bean
+//    @DependsOn({"lifecycleBeanPostProcessor"})
+//    public DefaultAdvisorAutoProxyCreator advisorAutoProxyCreator() {
+//        DefaultAdvisorAutoProxyCreator advisorAutoProxyCreator = new DefaultAdvisorAutoProxyCreator();
+//        advisorAutoProxyCreator.setProxyTargetClass(true);
+//        return advisorAutoProxyCreator;
+//    }
+    @Bean
+    public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor() {
+        AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor = new AuthorizationAttributeSourceAdvisor();
+        authorizationAttributeSourceAdvisor.setSecurityManager(securityManager());
+        return authorizationAttributeSourceAdvisor;
+    }
 
 }
