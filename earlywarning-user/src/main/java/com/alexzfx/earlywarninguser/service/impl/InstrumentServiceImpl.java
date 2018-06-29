@@ -18,8 +18,10 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.shiro.SecurityUtils;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,7 +34,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Author : Alex
@@ -66,9 +67,10 @@ public class InstrumentServiceImpl implements InstrumentService {
 
     private final HttpClient httpClient;
 
-    private final ExecutorService executorService;
+    private final ThreadPoolTaskExecutor executorService;
+    private final String machineDataUrl;
 
-    public InstrumentServiceImpl(CategoryRepository categoryRepository, InstrumentRepository instrumentRepository, UserRepository userRepository, InstOrderRepository instOrderRepository, String RootPath, BaseException PermissionDenied, BaseException NotFoundError, BaseException DeleteFailError, BaseException UnknownAccountError, BaseException FileTransError, HttpClient httpClient, ExecutorService executorService) {
+    public InstrumentServiceImpl(CategoryRepository categoryRepository, InstrumentRepository instrumentRepository, UserRepository userRepository, InstOrderRepository instOrderRepository, String RootPath, BaseException PermissionDenied, BaseException NotFoundError, BaseException DeleteFailError, BaseException UnknownAccountError, BaseException FileTransError, HttpClient httpClient, ThreadPoolTaskExecutor executorService, String machineDataUrl) {
         this.categoryRepository = categoryRepository;
         this.instrumentRepository = instrumentRepository;
         this.userRepository = userRepository;
@@ -81,6 +83,7 @@ public class InstrumentServiceImpl implements InstrumentService {
         this.FileTransError = FileTransError;
         this.httpClient = httpClient;
         this.executorService = executorService;
+        this.machineDataUrl = machineDataUrl;
     }
 
     @Override
@@ -248,11 +251,15 @@ public class InstrumentServiceImpl implements InstrumentService {
             if (!instrument.getCreater().getId().equals(user.getId()) && !user.getRoleNames().contains("admin")) {
                 throw PermissionDenied;
             }
-            Long oid = instOrderRepository.findIsFixing(id, MaintainStatus.FINISHED);
+            Long oid = instOrderRepository.findIsFixing(id, MaintainStatus.FINISHED.getId());
             if (oid != null) {
                 throw DeleteFailError;
             }
-            instrumentRepository.delete(instrument);
+            try {
+                instrumentRepository.delete(instrument);
+            } catch (ConstraintViolationException e) {
+                throw DeleteFailError;
+            }
         } catch (NoSuchElementException e) {
             log.error(e.getLocalizedMessage());
             throw new BaseException(500, "仪器不存在");
@@ -266,10 +273,11 @@ public class InstrumentServiceImpl implements InstrumentService {
      * @param instrument
      */
     private void autoBindData(Instrument instrument) {
-        String url = "localhost:8081/startMachineInfo";
+        String url = machineDataUrl;
         HttpPost httpPost = new HttpPost(url);
+        httpPost.addHeader("content-type", "application/x-www-form-urlencoded");
         List<NameValuePair> nameValuePairs = new ArrayList<>();
-        nameValuePairs.add(new BasicNameValuePair("machineId", instrument.getId().toString()));
+        nameValuePairs.add(new BasicNameValuePair("machineId", String.valueOf(instrument.getId())));
         nameValuePairs.add(new BasicNameValuePair("cid", String.valueOf(instrument.getCid())));
         try {
             httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));

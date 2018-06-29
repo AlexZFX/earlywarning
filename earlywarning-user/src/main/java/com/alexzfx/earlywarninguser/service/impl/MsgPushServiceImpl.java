@@ -86,7 +86,7 @@ public class MsgPushServiceImpl implements MsgPushService {
         //考虑是否需要抽象出来，但感觉复用性很小
         userMessage.setContent("尊敬的" + username + ",您好。"
                 + "您所创建的仪器" + instrument.getName() + "(" + instrument.getId() + ")"
-                + "于" + timestamp.getYear() + "年" + (timestamp.getMonth() + 1) + "月" + timestamp.getDate() + "日"
+                + "于" + (1900 + timestamp.getYear()) + "年" + (timestamp.getMonth() + 1) + "月" + timestamp.getDate() + "日"
                 + timestamp.getHours() + "时" + timestamp.getMinutes() + "分" + timestamp.getSeconds() + "秒"
                 + "发生了告警，仪器数值为" + machineData.getData() + "(" + instrument.getThresholdValue() + ")。"
                 + "系统已将此任务分配给了工作人员" + maintainerName

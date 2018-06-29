@@ -71,7 +71,7 @@ public class MachineDataController {
         dataMap.put("sender", sender);
         JobKey jobKey = new JobKey(machineId.toString());
         if (cron == null) {
-            cron = "* 0/1 * * * ? *";
+            cron = "0 */1 * * * ? *";
         }
         JobDetail jobDetail = JobBuilder.newJob(MachineDataTask.class).withIdentity(jobKey).setJobData(dataMap).build();
         CronScheduleBuilder scheduleBuilder;

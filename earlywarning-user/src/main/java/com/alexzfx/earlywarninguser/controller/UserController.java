@@ -101,9 +101,9 @@ public class UserController {
     @PostMapping("/login")
     public BaseResponse<User> login(@RequestBody User user) {
         Subject subject = SecurityUtils.getSubject();
-//        if (!VerCodeUtil.checkVerCode(subject.getSession(), user.getVerCode())) {
-//            throw VerCodeError;
-//        }
+        if (!VerCodeUtil.checkVerCode(subject.getSession(), user.getVerCode())) {
+            throw VerCodeError;
+        }
         UsernamePasswordToken token = new UsernamePasswordToken(user.getUsername(), user.getPassword());
         try {
             subject.login(token);
@@ -111,6 +111,12 @@ public class UserController {
             throw WrongPasswordError;
         } catch (UnknownAccountException e) {
             throw UnknownAccountError;
+        } catch (BaseException e) {
+            if (e.getRet() == 1006) {
+                throw e;
+            } else {
+                throw new BaseException();
+            }
         }
         user = (User) SecurityUtils.getSubject().getPrincipal();
         return new BaseResponse<>(user);

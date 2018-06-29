@@ -34,6 +34,15 @@ public class Role implements Serializable {
     @JoinTable(name = "RolePermission", joinColumns = {@JoinColumn(name = "roleId")}, inverseJoinColumns = {@JoinColumn(name = "pid")})
     private List<Permission> permissions;
 
+    public Role() {
+    }
+
+    public Role(String name, String description) {
+
+        this.name = name;
+        this.description = description;
+    }
+
     //    重新toString，否则会有懒加载异常
     @Override
     public String toString() {

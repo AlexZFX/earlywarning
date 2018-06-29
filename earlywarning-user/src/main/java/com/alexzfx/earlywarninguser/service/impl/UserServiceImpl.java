@@ -72,6 +72,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void modifyUserInfo(User userInfo) {
         User user = (User) SecurityUtils.getSubject().getPrincipal();
+        user = userRepository.findByUsername(user.getUsername());
         user.setName(userInfo.getName());
         user.setDescription(userInfo.getDescription());
         userRepository.save(user);

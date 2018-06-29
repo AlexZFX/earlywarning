@@ -73,7 +73,7 @@ public class MachineDataServiceImpl implements MachineDataService {
             if (instrument.getThresholdValue() < machineData.getData()) {
                 //TODO 先判断是否正在被维修，验证JPA查询返回值
                 //如果出问题的这台仪器不是正在被修理时，进行接下来的预警以及推送
-                Long orderId = instOrderRepository.findIsFixing(instrument.getId(), MaintainStatus.FINISHED);
+                Long orderId = instOrderRepository.findIsFixing(instrument.getId(), MaintainStatus.FINISHED.getId());
                 if (orderId == null) {
                     //对维修人员负载均衡
                     Integer maintainid = roleRepository.findByName("maintainer").getId();

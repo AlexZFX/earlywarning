@@ -42,6 +42,10 @@ spring:
     properties:
       mail:
         smtp:
+#         linux 配置
+#          socketFactory:
+#            port: 465
+#            class: javax.net.ssl.SSLSocketFactory
           auth: true
           starttls:
             enable: true

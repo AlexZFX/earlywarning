@@ -1,6 +1,7 @@
 package com.alexzfx.earlywarninguser.util;
 
 import com.alexzfx.earlywarninguser.exception.BaseException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.session.Session;
 
 import javax.imageio.ImageIO;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Random;
 
+@Slf4j
 public class VerCodeUtil {
 
     // 图片高度
@@ -42,6 +44,7 @@ public class VerCodeUtil {
 
         // 将生成的验证码code放入sessoin中
         session.setAttribute("verCode", captcha.toString());
+        log.info("new verCode : " + captcha.toString());
         // 通过ImageIO将图片输出
         ImageIO.write(bi, "JPG", os);
     }

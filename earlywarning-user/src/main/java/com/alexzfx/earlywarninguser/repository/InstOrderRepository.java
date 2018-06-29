@@ -18,7 +18,7 @@ import org.springframework.stereotype.Repository;
 public interface InstOrderRepository extends JpaRepository<InstOrder, Long> {
     //    List<Integer>
     @Query(nativeQuery = true, value = "select id from inst_order where inst_id = ?1 and maintain_status <> ?2")
-    Long findIsFixing(int instId, MaintainStatus maintainStatus);
+    Long findIsFixing(int instId, int maintainStatus);
 
     Page<InstOrder> findByMaintainStatus(MaintainStatus status, Pageable pageable);
 

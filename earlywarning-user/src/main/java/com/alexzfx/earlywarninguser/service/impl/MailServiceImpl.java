@@ -9,20 +9,24 @@ import com.alexzfx.earlywarninguser.exception.BaseException;
 import com.alexzfx.earlywarninguser.repository.UserRepository;
 import com.alexzfx.earlywarninguser.service.MailService;
 import com.alexzfx.earlywarninguser.util.VerCodeUtil;
+import com.alexzfx.earlywarninguser.util.WSUtil.SocketSessionRegistry;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -59,10 +63,19 @@ public class MailServiceImpl implements MailService {
 
     private final BaseException EmailValidError;
 
-    private final ExecutorService executorService;
+    private final ThreadPoolTaskExecutor executorService;
+
+    private final SocketSessionRegistry register;
+
+    private final SimpMessagingTemplate template;
+
+    @Resource(name = "userSocketPath")
+    private String userSocketPath;
+    @Resource(name = "maintainerSocketPath")
+    private String maintainerSocketPath;
 
     @Autowired
-    public MailServiceImpl(JavaMailSender sender, StringRedisTemplate redisTemplate, BaseException AuthFailError, BaseException EmailExistError, UserRepository userRepository, BaseException MailSendError, BaseException EmailValidError, ExecutorService executorService) {
+    public MailServiceImpl(JavaMailSender sender, StringRedisTemplate redisTemplate, BaseException AuthFailError, BaseException EmailExistError, UserRepository userRepository, BaseException MailSendError, BaseException EmailValidError, ThreadPoolTaskExecutor executorService, SocketSessionRegistry register, SimpMessagingTemplate template) {
         this.sender = sender;
         this.redisTemplate = redisTemplate;
         this.AuthFailError = AuthFailError;
@@ -71,6 +84,8 @@ public class MailServiceImpl implements MailService {
         this.MailSendError = MailSendError;
         this.EmailValidError = EmailValidError;
         this.executorService = executorService;
+        this.register = register;
+        this.template = template;
     }
 
 
@@ -86,7 +101,8 @@ public class MailServiceImpl implements MailService {
         user.setIsEmailLocked(LockStatus.LOCKED);
         try {
             userRepository.save(user);
-        } catch (DataIntegrityViolationException e) {
+        } catch (Exception e) {
+            e.printStackTrace();
             throw EmailExistError;
         }
         //发现这段操作很耗时间，另开线程单独执行
@@ -108,6 +124,7 @@ public class MailServiceImpl implements MailService {
             try {
                 sender.send(message);
             } catch (MailException e) {
+                e.printStackTrace();
                 throw MailSendError;
             }
         });
@@ -128,6 +145,15 @@ public class MailServiceImpl implements MailService {
             User user = userRepository.getOne(uid);
             user.setIsEmailLocked(LockStatus.UNLOCKED);
             userRepository.save(user);
+            if (user.getRoleNames().contains("user")) {
+                for (String s : register.getSessionIds(user.getUsername())) {
+                    template.convertAndSendToUser(s, userSocketPath, "Auth Email Success", createHeaders(s));
+                }
+            } else if (user.getRoleNames().contains("maintainer")) {
+                for (String s : register.getSessionIds(user.getUsername())) {
+                    template.convertAndSendToUser(s, maintainerSocketPath, "Auth Email Success", createHeaders(s));
+                }
+            }
         }
     }
 
@@ -193,4 +219,12 @@ public class MailServiceImpl implements MailService {
     private boolean validEamil(String email) {
         return email.matches("^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z0-9]{2,6}$");
     }
+
+    private MessageHeaders createHeaders(String sessionId) {
+        SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.create();
+        headerAccessor.setSessionId(sessionId);
+        headerAccessor.setLeaveMutable(true);
+        return headerAccessor.getMessageHeaders();
+    }
+
 }

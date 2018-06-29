@@ -26,7 +26,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
             "inner join user_role ur on u.id=ur.uid and ur.role_id=?1 " +// 角色为维修人员
             "left join inst_order io on u.id=io.maintainer_id and io.maintain_status <> ?2 " +//左联订单表，订单状态不为完成
             "group by u.id order by count(io.maintainer_id)" +
-            "limit 5")
+            "limit 1")
     List<Integer> findFreeMaintainer(Integer maintainId, MaintainStatus status);
 
 

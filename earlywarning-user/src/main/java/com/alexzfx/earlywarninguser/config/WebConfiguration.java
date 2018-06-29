@@ -13,12 +13,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.scheduling.concurrent.ThreadPoolExecutorFactoryBean;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Author : Alex
@@ -30,6 +29,8 @@ public class WebConfiguration implements WebMvcConfigurer {
 
     @Value("${web.upload-path}")
     private String rootPath;
+    @Value("${machine-data-url}")
+    private String machineDataUrl;
 
     //排除jackson的依赖，将fastJson设置为json处理器
     @Override
@@ -78,9 +79,15 @@ public class WebConfiguration implements WebMvcConfigurer {
     }
 
     @Bean(value = {"maintainerSocketPath"})
-    String maintainerSocketPath() {
+    public String maintainerSocketPath() {
         return "/msg/maintainer";
     }
+
+    @Bean(value = {"machineDataUrl"})
+    public String machineDataUrl() {
+        return machineDataUrl;
+    }
+
 
     @Bean(value = {"RootPath"})
     public String RootPath() {
@@ -109,16 +116,24 @@ public class WebConfiguration implements WebMvcConfigurer {
         return builder.build();
     }
 
-    /**
-     * factoryBean的参数应该以配置文件方式配置，这里为了方便没用
-     *
-     * @return
-     */
     @Bean
-    public ExecutorService executorService() {
-        ThreadPoolExecutorFactoryBean factoryBean = new ThreadPoolExecutorFactoryBean();
-        factoryBean.setCorePoolSize(2);
-        factoryBean.setMaxPoolSize(10);
-        return factoryBean.getObject();
+    public ThreadPoolTaskExecutor executorService() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(10);
+        return executor;
     }
+
+//    /**
+//     * factoryBean的参数应该以配置文件方式配置，这里为了方便没用
+//     *
+//     * @return
+//     */
+//    @Bean
+//    public ExecutorService executorService() {
+//        ThreadPoolExecutorFactoryBean factoryBean = new ThreadPoolExecutorFactoryBean();
+//        factoryBean.setCorePoolSize(2);
+//        factoryBean.setMaxPoolSize(10);
+//        return factoryBean.getObject();
+//    }
 }
